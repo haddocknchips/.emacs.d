@@ -153,7 +153,7 @@
              (general-create-definer efs/leader-keys
                :keymaps '(normal insert visual emacs)
                :prefix "SPC"
-               :global-prefix "C-SPC"))
+               :global-prefix "C-SPC")
 
              (efs/leader-keys
                "t"  '(:ignore t :which-key "toggles")
@@ -196,6 +196,8 @@
 
 (efs/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
+
+;; Ep 4, 2012-12-07: Projectile project interaction library eg, for folders with .gitk
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
