@@ -120,16 +120,17 @@
 ;; Finally, the icons
 ;; Need to run M-x all-the-icons-install-fonts the first time the below is loaded on system
 ;; 2025-12-08: modified below because of errors
-(use-package all-the-icons
+;;(use-package all-the-icons 2025-12-12: changed to nerd-icons per https://github.com/daviwil/emacs-from-scratch/pull/96/commits/0abf5057d581da9a432256828a9d3f1470351835
+(use-package nerd-icons
              :if (display-graphic-p)
-             :commands all-the-icons-install-fonts
+             :commands nerd-icons-install-fonts
              :init
-             (unless (find-font (font-spec :name "all-the-icons"))
-               (all-the-icons-install-fonts t )))
+             (unless (find-font (font-spec :name "nerd_icons"))
+               (nerd-icons-install-fonts t )))
 
-(use-package all-the-icons-dired
+(use-package nerd-icons-dired
              :if (display-graphic-p)
-             :hook (dired-mode . all-the-icons-dired-mode))
+             :hook (dired-mode . nerd-icons-dired-mode))
 
 (use-package doom-modeline
    :init (doom-modeline-mode 1)
@@ -177,8 +178,6 @@
   :ensure t
   :config
   (key-chord-mode 1))
-;; Map "jj" to escape insert mode
-(key-chord-define evil-insert-state-map "jj" 'evil-normal-state)
 
 (use-package evil
              :init
@@ -203,6 +202,9 @@
              :config
              (evil-collection-init))
 
+;; Map "jj" to escape insert mode
+(key-chord-define evil-insert-state-map "jj" 'evil-normal-state)
+
 ;; Hydra => transient keybindings? 
 (use-package hydra)
 
@@ -215,7 +217,7 @@
 (efs/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
 
-;; Ep 4, 2012-12-07: Projectile project interaction library eg, for folders with .git
+;; Ep 4, 2015-12-07: Projectile project interaction library eg, for folders with .git
 ;; - https://github.com/bbatsov/projectile
 ;; - https://docs.projectile.mx/projectile/projects.html#storing-project-settings
 ;; - https://www.gnu.org/software/emacs/manual/html_node/elisp/Directory-Local-Variables.html
@@ -240,6 +242,57 @@
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
 
+;; Ep 5, 2025-12-08,09: Org mode!
+;; https://orgmode.org/
+;; https://orgmode.org/manual/index.html
+
+;; Activate variable pitch and other modes
+(defun efs/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (auto-fill-mode 0)
+  (visual-line-mode 1)
+  (setq evil-auto-indent nil))
+
+(use-package org
+  :hook (org-mode . efs/org-mode-setup)
+  :config
+  (setq org-ellipsis " ▾" ;; changes ellipses to icons that look like dropdowns
+	org-hide-emphasis-markets t))
+
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+;; Replace list hyphen with dot; turn off if not liked
+(front-lock-add-keywords 'org-mode
+			 '(("^ *\\([-]\\) "
+			    (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
+(dolist (face '((org-level-1 . 1.2)
+		(org-level-2 . 1.1)
+		(org-level-3 . 1.05)
+		(org-level-4 . 1.0)
+		(org-level-5 . 1.1)
+		(org-level-6 . 1.1)
+		(org-level-7 . 1.1)
+		(org-level-8 . 1.1)))
+  (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+
+;; Make sure org-indent is available
+(require 'org-indent)
+
+;; Ensure that anythying that should be fixed-pitch is Org files is such
+(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-indent nil :inherit '(org-hide fixed-pitch))
+(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+
 ;; NOTE: Make sure to configure a GitHub token before using the package!
 ;; - https://magit.vc/manual/forge/Token-Creation.html#Token-Creation
 ;; - https://magit.vc/manual/ghub/Getting-Started.html#Getting-Started
@@ -257,8 +310,8 @@
  '(package-selected-packages
    '(all-the-icons-dired command-log-mode counsel-projectile
 			 doom-modeline doom-themes evil-collection
-			 general helpful hydra ivy-rich magit
-			 rainbow-delimiters)))
+			 general helpful hydra ivy-rich key-chord
+			 magit nerd-icons-dired rainbow-delimiters)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
