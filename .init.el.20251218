@@ -1,14 +1,6 @@
 ;;; based on Emacs from Scratch
-;;; Emacs from scratch #6
-;;; Last modified 2025-12-18
-;;; Adjusting order to adapt to efs init.el contents
-
-;; Basic UI configuration -----------------------------------------------------
-
-;;;; Font sizes: set the font face based on platform
-; But trying this:
-(defvar efs/default-font-size 180)
-(defvar efs/default-variable-font-size 180)
+;;; Emacs from scratch #2
+;;; Last modified 2025-12-06
 
 (setq inhibit-startup-message t)
 
@@ -19,39 +11,43 @@
 
 (menu-bar-mode -1)      ; Disable the menu bar
 
-;; Load theme
-;; (load-theme 'wombat) --> pending removal; probably not needed
-
 ;; Set up the visible bell; might be annoying on MacOS
 ;(setq visible-bell t)
 
+;;;; Font sizes: set the font face based on platform
+; But trying this:
+(defvar efs/default-font-size 180)
+(defvar efs/default-variable-font-size 180)
+
 ;;;; Need to play around with font sizes
 
-;; Disable line number for some modes
-(dolist (mode '(org-mode-hook
-                term-mode-hook
-		shell-mode-hook
-                eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
-;; Font configuration ---------------------------------------------------------
+;;;;(on-platform-do
+;  ((windows cygwin) (set-face-attribute 'default nil :font "Fira Mono:antialias=subpixel" :height 130))
+;  (osx (set-face-attribute 'default nil :font "Fira Mono" :height 170))
+;  (linux (set-face-attribute 'default nil :font "Fira Code Retina" :height 280)))
 
 ;(set-face-attribute 'default nil :font "Fira Mono" :height 180)
 (set-face-attribute 'default nil :font "Fira Code Retina" :height efs/default-font-size)
 
-;; Set the fixed pitch face
-(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 260)
+; trying this:
+;(set-face-attribute 'default nil :font "Fira Mono-14")
 
-;; Set the variable pitch face
-(set-face-attribute 'variable-pitch nil :font "Cantarell" :height 295 :weight 'regular)
+;; Load theme
+(load-theme 'wombat)
 
-;; Package manager configuration ----------------------------------------------
+;; Make ESC quit prompts
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
+;; Initialise package sources
 (require 'package)
 
 (setq package-archives '(("melpa" . "https://melpa.org/packages/") 
                          ("org" . "https://orgmode.org/elpa/")
                          ("elpa" . "https://elpa.gnu.org/packages/")))
+
+;; Adding based on the Melpa website
+;; Not sure this is needed
+;(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 
 (package-initialize)
 (unless package-archive-contents
@@ -61,15 +57,20 @@
 (unless (package-installed-p 'use-package)
   (package-install 'use-package))
 
+;; Show line numbers (why here? move later)
+(column-number-mode)
+(global-display-line-numbers-mode t)
+;; Disable line number for some modes
+(dolist (mode '(org-mode-hook
+                term-mode-hook
+		shell-mode-hook
+                eshell-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
 (require 'use-package)
 (setq use-package-always-ensure t)
 
-(column-number-mode)
-(global-display-line-numbers-mode t)
-
 (use-package command-log-mode)
-
-;; Ivy configuation -----------------------------------------------------------
 
 (use-package ivy
    :diminish
@@ -88,6 +89,33 @@
           ("C-d" . ivy-reverse-i-search-kill))
    :config
    (ivy-mode 1))
+
+;; Switch buffers; demo only => see general package binding below
+;(global-set-key (kbd "C-M-j") 'counsel-switch-buffer)
+
+(use-package ivy-rich
+             :init
+             (ivy-rich-mode 1))
+
+(use-package counsel
+             :bind (("M-x" . counsel-M-x)
+                    ("C-x b" . counsel-ibuffer)
+                    ("C-x C-f" . counsel-find-file)
+                    :map minibuffer-local-map
+                    ("C-r" . 'counsel-minibuffer-history))
+             :config
+             (setq ivy-initial-inputs-alist nil)) ;; Don't start searches with ^
+
+;; Helpful => very helpful(!) when trying to understand details of commands
+(use-package helpful
+             :custom
+             (counsel-describe-function-function #'helpful-callable)
+             (counsel-describe-variable-function #'helpful-variable)
+             :bind
+             ([remap describe-function] . counsel-describe-function) ; will use counsel instead of helpful version (which is not as good)
+             ([remap describe-command] . helpful-command)
+             ([remap describe-variable] . counsel-describe-variable)
+             ([remap describe-key] . helpful-key))
 
 ;; Finally, the icons
 ;; Need to run M-x all-the-icons-install-fonts the first time the below is loaded on system
@@ -117,44 +145,12 @@
 (use-package rainbow-delimiters
              :hook (prog-mode . rainbow-delimiters-mode))
 
-;; Switch buffers; demo only => see general package binding below
-;(global-set-key (kbd "C-M-j") 'counsel-switch-buffer)
-
-(use-package ivy-rich
-             :init
-             (ivy-rich-mode 1))
-
-(use-package counsel
-             :bind (("M-x" . counsel-M-x)
-                    ("C-x b" . counsel-ibuffer)
-                    ("C-x C-f" . counsel-find-file)
-                    :map minibuffer-local-map
-                    ("C-r" . 'counsel-minibuffer-history))
-             :config
-             (setq ivy-initial-inputs-alist nil)) ;; Don't start searches with ^
-
-;; Helpful => very helpful(!) when trying to understand details of commands
-(use-package helpful
-             :custom
-             (counsel-describe-function-function #'helpful-callable)
-             (counsel-describe-variable-function #'helpful-variable)
-             :bind
-             ([remap describe-function] . counsel-describe-function) ; will use counsel instead of helpful version (which is not as good)
-             ([remap describe-command] . helpful-command)
-             ([remap describe-variable] . counsel-describe-variable)
-             ([remap describe-key] . helpful-key))
-
 ;; which-key => provides panel pop-up to show what keys/keybindings are available under that prefix; see readme
 (use-package which-key
              :init (which-key-mode)
              :diminish which-key-mode
              :config
              (setq which-key-idle-delay 0.3))
-
-;; Key binding configuation ---------------------------------------------------
-
-;; Make ESC quit prompts
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
 ;; General for bindings
 ;; Can also be used for maintaining general key prefix
@@ -181,10 +177,9 @@
 (use-package key-chord
   :ensure t
   :config
-  (key-chord-mode 1)
-  (key-chord-define evil-insert-state-map "jj" 'evil-normal-state))
+  (key-chord-mode 1))
 
-(use-package evil 
+(use-package evil
              :init
              (setq evil-want-integration t)
              (setq evil-want-keybinding nil)
@@ -207,6 +202,9 @@
              :config
              (evil-collection-init))
 
+;; Map "jj" to escape insert mode
+(key-chord-define evil-insert-state-map "jj" 'evil-normal-state)
+
 ;; Hydra => transient keybindings? 
 (use-package hydra)
 
@@ -218,8 +216,6 @@
 
 (efs/leader-keys
   "ts" '(hydra-text-scale/body :which-key "scale text"))
-
-;; Projectile configuration ---------------------------------------------------
 
 ;; Ep 4, 2015-12-07: Projectile project interaction library eg, for folders with .git
 ;; - https://github.com/bbatsov/projectile
